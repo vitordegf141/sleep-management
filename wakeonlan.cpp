@@ -61,7 +61,7 @@ public:
                     if (status != NULL) {
                         int i;
                         for (i = 0; i < ParticipantsTable.size(); i++) {
-                            ParticipantData* participant = &ParticipantsTable.participants[i];
+                            ParticipantData* participant = &ParticipantsTable[i];
                         }
                     }
                 }
@@ -83,10 +83,8 @@ public:
             // Send sleep status request to participants
             int i;
             for (i = 0; i < ParticipantsTable.size(); i++) {
-                ParticipantData* participant = &ParticipantsTable.participants[i];
-
                 // Skip if participant is the manager
-                if (strcmp(participant->Hostname, "manager") == 0)
+                if (strcmp(ParticipantsTable[i].Hostname, "manager") == 0)
                     continue;
 
                 // Prepare sleep status request packet
@@ -175,34 +173,35 @@ public:
 
 
     void *interfaceThread(void *arg) {
-        char command[100];
+        std::string command;
+        std::cout << "Digite o comando: " << std::endl;
+
 
         while (1) {
-            fgets(command, sizeof(command), stdin);
+            std::cin >> command;
 
-            if (strcmp(command, "EXIT\n") == 0) {
+            if (command == "EXIT") {
                 if (isManager) {
                     pthread_rwlock_wrlock(&participantsRWLock);
-                    printf("Estação Manager está saindo do serviço\n");
+                    std::cout << "Estação Manager está saindo do serviço" << std::endl;
                     pthread_rwlock_unlock(&participantsRWLock);
                 } else {
-                    printf("Enviando mensagem de saída...\n");
+                    std::cout << "Enviando mensagem de saída..." << std::endl;
                     // Enviar pacote de descoberta especial para indicar saída do serviço
                 }
 
                 break;
-            }
-
-            if (strncmp(command, "WAKEUP", 6) == 0) {
-                char hostname[50];
-                sscanf(command, "WAKEUP %s", hostname);
-
-                printf("Enviando comando de WAKEUP para a estação %s...\n", hostname);
+            } else if (command == "WAKEUP") {
+                std::string hostname;
+                std::cin >> hostname;
+                std::cout << "Enviando comando de WAKEUP para a estação" << hostname << std::endl;
                 // Enviar comando de WAKEUP (pacote WoL) para a estação especificada
+            } else {
+                std::cout << "Comando inválido." << std::endl;
             }
         }
 
-        pthread_exit(NULL);
+        pthread_exit(NULL);command
     }
 };
 
@@ -213,9 +212,9 @@ int main(int argc, char *argv[]){
 
     if (argc > 1 && strcmp(argv[1], "manager") == 0) {
         isManager = true;
-        printf("Estação iniciada como Manager\n");
+        std::cout << "Estação iniciada como Manager\n" << std::endl;
     } else {
-        printf("Estação iniciada como Participante\n");
+        std::cout << "Estação iniciada como Participante\n" << std::endl;
     }
  
 };
