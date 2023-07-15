@@ -41,6 +41,28 @@ pthread_rwlock_t participantsRWLock;
 class discovery_subservice{
 public:
 
+    int createSocket(int port) {
+        int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sockfd < 0) {
+            std::cerr << "Failed to create socket." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        struct sockaddr_in serverAddr;
+        memset(&serverAddr, 0, sizeof(serverAddr));
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+        serverAddr.sin_port = htons(port);
+
+        if (bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+            std::cerr << "Failed to bind the socket." << std::endl;
+            close(sockfd);
+            exit(EXIT_FAILURE);
+        }
+
+        return sockfd;
+    }
+
     void *discoveryThread(void *arg) {
         int sockfd = createSocket(MONITORING_PORT);
         struct sockaddr_in clientAddr;
