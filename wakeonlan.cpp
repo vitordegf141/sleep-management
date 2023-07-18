@@ -13,7 +13,6 @@
 using namespace std;
 
 #define PORT 12345
-#define MAX_PARTICIPANTS 10
 #define BUFFER_SIZE 1024
 #define MONITORING_PORT 8889
 
@@ -34,6 +33,7 @@ int numParticipants = 0;
 
 pthread_mutex_t participantsMutex;
 pthread_rwlock_t participantsRWLock;
+pthread_mutex_t tableMutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 // Executado pelo manager
@@ -96,37 +96,38 @@ public:
 // Monitora o status dos computadores a partir do envio de pacotes
 class monitoring_subservice{
 public:
-    void* monitoringService(void* arg) {
-        int sockfd = createSocket(MONITORING_PORT);
-        struct sockaddr_in clientAddr;
-        char buffer[BUFFER_SIZE];
+    // void* monitoringService(void* arg) {
+    //     discovery_subservice discovery;
+    //     int sockfd = discovery.createSocket(MONITORING_PORT);
+    //     struct sockaddr_in clientAddr;
+    //     char buffer[BUFFER_SIZE];
 
-        while (1) {
-            // Send sleep status request to participants
-            int i;
-            for (i = 0; i < ParticipantsTable.size(); i++) {
-                // Skip if participant is the manager
-                if (strcmp(ParticipantsTable[i].Hostname, "manager") == 0)
-                    continue;
+    //     while (1) {
+    //         // Send sleep status request to participants
+    //         int i;
+    //         for (i = 0; i < ParticipantsTable.size(); i++) {
+    //             // Skip if participant is the manager
+    //             if (ParticipantsTable[i].Hostname == "manager")
+    //                 continue;
 
-                // Prepare sleep status request packet
-                char request[BUFFER_SIZE];
-                snprintf(request, BUFFER_SIZE, "sleep_status_request,%s", participant->Hostname);
+    //             // Prepare sleep status request packet
+    //             char request[BUFFER_SIZE];
+    //             snprintf(request, BUFFER_SIZE, "sleep_status_request,%s", ParticipantsTable[i].Hostname);
 
-                // Create socket address for participant
-                struct sockaddr_in participantAddr;
-                memset(&participantAddr, 0, sizeof(participantAddr));
-                participantAddr.sin_family = AF_INET;
-                participantAddr.sin_port = htons(MONITORING_PORT);
-                participantAddr.sin_addr.s_addr = inet_addr(participant->ip_address);
+    //             // Create socket address for participant
+    //             struct sockaddr_in participantAddr;
+    //             memset(&participantAddr, 0, sizeof(participantAddr));
+    //             participantAddr.sin_family = AF_INET;
+    //             participantAddr.sin_port = htons(MONITORING_PORT);
+    //             // participantAddr.sin_addr.s_addr = inet_addr(ParticipantsTable[i].ip_address);
 
-                // Send sleep status request packet to participant
-                sendto(sockfd, (const char*)request, strlen(request), MSG_CONFIRM, (const struct sockaddr*)&participantAddr, sizeof(participantAddr));
-            }
+    //             // Send sleep status request packet to participant
+    //             sendto(sockfd, (const char*)request, strlen(request), MSG_CONFIRM, (const struct sockaddr*)&participantAddr, sizeof(participantAddr));
+    //         }
 
-            sleep(5); // Wait for sleep status responses
-        }
-    }
+    //         sleep(5); // Wait for sleep status responses
+    //     }
+    // }
 
 };
 
@@ -148,10 +149,10 @@ public:
         try{
             // Adiciona participante no final da lista
             ParticipantsTable.push_back(new_participant);
-            std::cout << "Participant " << hostname <<" added to table";
+            std::cout << "Participant " << hostname <<" added to table\n";
         }
         catch(std::exception& e){
-            std::cout << "Error adding participant to table: " << e.what();
+            std::cout << "Error adding participant to table: \n" << e.what();
         }
     }
     
@@ -193,8 +194,19 @@ public:
 class interface_subservice{
 public:
 
+    // Função para exibir a lista de participantes na tela
+    void displayParticipants() {
+        pthread_mutex_lock(&tableMutex);
+        std::cout << "Participants:" << std::endl;
+        for (int i; i<ParticipantsTable.size(); i++) {
+            std::cout << "Hostname: " << ParticipantsTable[i].Hostname << ", IP: " << ParticipantsTable[i].ip_address
+                      << ", MAC: " << ParticipantsTable[i].MAC << ", Status: " << ParticipantsTable[i].is_awaken << std::endl;
+        }
+        pthread_mutex_unlock(&tableMutex);
+    }
 
-    void *interfaceThread(void *arg) {
+
+    void    interfaceThread(void *arg) {
         std::string command;
         std::cout << "Digite o comando: " << std::endl;
 
@@ -222,8 +234,6 @@ public:
                 std::cout << "Comando inválido." << std::endl;
             }
         }
-
-        pthread_exit(NULL);command
     }
 };
 
@@ -237,6 +247,22 @@ int main(int argc, char *argv[]){
         std::cout << "Estação iniciada como Manager\n" << std::endl;
     } else {
         std::cout << "Estação iniciada como Participante\n" << std::endl;
+            std::string hostname = "MyComputer";
+            std::string mac = "AA:BB:CC:DD:EE:FF";
+            std::string ip = "192.168.1.100";
+            bool is_awaken = true;
+
+            // Adicionar o participante na tabela
+            management_subservice management;
+            management.AddParticipantToTable(hostname, mac, ip, is_awaken);
+
+            // Mostrar participantes
+            interface_subservice interface;
+
+            interface.displayParticipants();
     }
+
+    // Adicionar na tabela o novo participante
+    //
  
 };
