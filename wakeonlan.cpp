@@ -197,8 +197,8 @@ public:
     // Função para exibir a lista de participantes na tela
     void displayParticipants() {
         pthread_mutex_lock(&tableMutex);
-        std::cout << "Participants:" << std::endl;
-        for (int i; i<ParticipantsTable.size(); i++) {
+        std::cout << "Participants:" <<  std::endl;
+        for (int i=0; i<ParticipantsTable.size(); i++) {
             std::cout << "Hostname: " << ParticipantsTable[i].Hostname << ", IP: " << ParticipantsTable[i].ip_address
                       << ", MAC: " << ParticipantsTable[i].MAC << ", Status: " << ParticipantsTable[i].is_awaken << std::endl;
         }
